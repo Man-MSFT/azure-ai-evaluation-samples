@@ -15,6 +15,7 @@ os.environ["OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT"] = "true"
 
 resource_name = os.getenv("RESOURCE_NAME")
 project_name = os.getenv("PROJECT_NAME")
+api_key = os.getenv("API_KEY")
 
 
 from opentelemetry.instrumentation.openai_v2 import OpenAIInstrumentor
@@ -22,10 +23,13 @@ from opentelemetry.instrumentation.openai_v2 import OpenAIInstrumentor
 OpenAIInstrumentor().instrument()
 
 from azure.ai.projects import AIProjectClient
+
 from azure.identity import DefaultAzureCredential
 
 project_client = AIProjectClient(
+    api_version="2024-12-01-preview",
     credential=DefaultAzureCredential(),
+    api_key=api_key,
     endpoint=f"https://{resource_name}.services.ai.azure.com/api/projects/{project_name}",
 )
 
@@ -39,5 +43,16 @@ from azure.monitor.opentelemetry import configure_azure_monitor
 # logging_formatter: Formatter = configurations[LOGGING_FORMATTER_ARG]  # type: ignore
 configure_azure_monitor(connection_string=connection_string)
 
+
+client = project_client.inference.get_azure_openai_client()
+
+# response = client.chat.completions.create(
+#     model="gpt-4o",
+#     messages=[
+#         {"role": "user", "content": "Write a short poem on open telemetry."},
+#     ],
+# )
+
+# print(response)
 
 print("done")
