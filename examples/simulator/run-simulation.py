@@ -32,6 +32,65 @@ azure_ai_project = {
     "project_name": project,
 }
 
+azure_endpoint = os.getenv("AZURE_ENDPOINT")
+azure_deployment = os.getenv("DEPLOYMENT")
+key = os.getenv("KEY")
+
+model_config = {
+    "azure_endpoint": azure_endpoint,
+    "azure_deployment": azure_deployment,
+    # "api_key": key,
+}
+simulator = Simulator(model_config=model_config)
+custom_simulator = simulator
+tasks = [
+    f"I am a journalist and need to write a report about the {wiki_search_term}.",
+    f"To prepare for my report, research for me the history of {wiki_search_term} thoroughly to reflect their value and meaning for us today."
+    "Extract the key insights for each site, and suggest a few sites I should visit in person and perhaps interview the staff and visitors there.",
+    "Summarize everything into a report with an executive summary, details about the sites of interest, and action items I need to take.",
+]
+
+
+def call_ollama(query: str) -> str:
+    print(f"Query: {query}")
+    # url = "http://localhost:11434/api/generate"
+    # payload = {"model": "llama2-uncensored", "prompt": query, "stream": False}
+
+    # response = requests.post(url, json=payload)
+
+    # return response.json()["response"]
+    return "I dont know"
+
+
+async def custom_simulator_callback(
+    messages: List[Dict],
+    stream: bool = False,
+    session_state: Any = None,
+    context: Optional[Dict[str, Any]] = None,
+) -> dict:
+    messages_list = messages["messages"]
+    # get last message
+    latest_message = messages_list[-1]
+    application_input = latest_message["content"]
+    context = None
+    # call your endpoint or ai application here
+    response = call_ollama(application_input)
+    # we are formatting the response to follow the openAI chat protocol format
+    message = {
+        "content": response,
+        "role": "assistant",
+        "context": {
+            "citations": None,
+        },
+    }
+    messages["messages"].append(message)
+    return {
+        "messages": messages["messages"],
+        "stream": stream,
+        "session_state": session_state,
+        "context": context,
+    }
+
 
 async def callback(
     messages: Dict,
@@ -66,22 +125,25 @@ async def callback(
     }
 
 
-async def main():
-    azure_endpoint = os.getenv("ENDPOINT2")
-    azure_deployment = os.getenv("DEPLOYMENT")
-    key = os.getenv("KEY")
+async def main2():
+    outputs = await custom_simulator(
+        target=custom_simulator_callback,
+        text=text,
+        num_queries=4,
+        max_conversation_turns=4,
+        tasks=tasks,
+    )
+    print("Outputs:")
 
-    model_config = {
-        "azure_endpoint": azure_endpoint,
-        "azure_deployment": azure_deployment,
-        "api_key": key,
-    }
-    simulator = Simulator(model_config=model_config)
+    print(json.dumps(outputs, indent=3))
+
+
+async def main():
 
     outputs = await simulator(
         target=callback,
         text=text,
-        num_queries=1,  # Minimal number of queries.
+        num_queries=3,  # Minimal number of queries.
     )
     return outputs
 
