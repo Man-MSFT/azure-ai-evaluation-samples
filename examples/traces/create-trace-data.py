@@ -10,7 +10,6 @@ import os
 
 load_dotenv()
 
-# Set OpenTelemetry environment variable to capture message content
 os.environ["OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT"] = "true"
 
 resource_name = os.getenv("RESOURCE_NAME")
@@ -27,32 +26,33 @@ from azure.ai.projects import AIProjectClient
 from azure.identity import DefaultAzureCredential
 
 project_client = AIProjectClient(
-    api_version="2024-12-01-preview",
     credential=DefaultAzureCredential(),
-    api_key=api_key,
     endpoint=f"https://{resource_name}.services.ai.azure.com/api/projects/{project_name}",
 )
 
-connection_string = project_client.telemetry.get_connection_string()
 
-print(connection_string)
+connection_string = (
+    project_client.telemetry.get_application_insights_connection_string()
+)
 
 from azure.monitor.opentelemetry import configure_azure_monitor
 
-# this line fails
-# logging_formatter: Formatter = configurations[LOGGING_FORMATTER_ARG]  # type: ignore
 configure_azure_monitor(connection_string=connection_string)
 
+print(
+    "Get an authenticated Azure OpenAI client for the parent AI Services resource, and perform a chat completion operation:"
+)
+with project_client.get_openai_client(api_version="2024-10-21") as client:
 
-client = project_client.inference.get_azure_openai_client()
+    response = client.chat.completions.create(
+        model="gpt-4.1",
+        messages=[
+            {
+                "role": "user",
+                "content": "How many feet are in a mile?",
+            },
+        ],
+    )
 
-# response = client.chat.completions.create(
-#     model="gpt-4o",
-#     messages=[
-#         {"role": "user", "content": "Write a short poem on open telemetry."},
-#     ],
-# )
-
-# print(response)
-
-print("done")
+    # according to the tutorial, after doing this, this should show up in my traces in project view
+    print(response.choices[0].message.content)
