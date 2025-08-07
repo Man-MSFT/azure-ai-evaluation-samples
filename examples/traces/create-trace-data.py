@@ -14,8 +14,6 @@ os.environ["OTEL_INSTRUMENTATION_GENAI_CAPTURE_MESSAGE_CONTENT"] = "true"
 
 resource_name = os.getenv("RESOURCE_NAME")
 project_name = os.getenv("PROJECT_NAME")
-api_key = os.getenv("API_KEY")
-
 
 from opentelemetry.instrumentation.openai_v2 import OpenAIInstrumentor
 
