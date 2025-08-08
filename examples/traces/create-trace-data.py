@@ -37,6 +37,19 @@ from azure.monitor.opentelemetry import configure_azure_monitor
 
 configure_azure_monitor(connection_string=connection_string)
 
+
+# https://learn.microsoft.com/en-us/azure/ai-foundry/how-to/develop/trace-application step 6
+with project_client.get_openai_client(api_version="2024-10-21") as client:
+    response = client.chat.completions.create(
+        model="DeepSeek-R1",
+        messages=[
+            {"role": "user", "content": "Write a short poem on open telemetry."},
+        ],
+    )
+    print("response from deepseek", response.choices[0].message.content)
+
+
+# from a different tutorial
 print(
     "Get an authenticated Azure OpenAI client for the parent AI Services resource, and perform a chat completion operation:"
 )
@@ -53,4 +66,4 @@ with project_client.get_openai_client(api_version="2024-10-21") as client:
     )
 
     # according to the tutorial, after doing this, this should show up in my traces in project view
-    print(response.choices[0].message.content)
+    print('response from gpt', response.choices[0].message.content)
